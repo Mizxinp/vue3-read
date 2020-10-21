@@ -451,7 +451,7 @@ function baseCreateRenderer(
   // style in order to prevent being inlined by minifiers.
   const patch: PatchFn = (
     n1,
-    n2,
+    n2, // 虚拟节点
     container,
     anchor = null,
     parentComponent = null,
@@ -1070,7 +1070,6 @@ function baseCreateRenderer(
   ) => {
     if (oldProps !== newProps) {
       for (const key in newProps) {
-        // empty string is not valid prop
         if (isReservedProp(key)) continue
         const next = newProps[key]
         const prev = oldProps[key]
@@ -1208,6 +1207,7 @@ function baseCreateRenderer(
     isSVG: boolean,
     optimized: boolean
   ) => {
+    // 初始化时n1不为空，执行mountComponent
     if (n1 == null) {
       if (n2.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE) {
         ;(parentComponent!.ctx as KeepAliveContext).activate(
@@ -1242,6 +1242,9 @@ function baseCreateRenderer(
     isSVG,
     optimized
   ) => {
+    // 创建根实例
+    // vue2中到组件实例是instance对象中的ctx上下文
+    // ctx中会有 $attrs/$data/$el/$emit等等
     const instance: ComponentInternalInstance = (initialVNode.component = createComponentInstance(
       initialVNode,
       parentComponent,
@@ -1266,6 +1269,8 @@ function baseCreateRenderer(
     if (__DEV__) {
       startMeasure(instance, `init`)
     }
+
+    // 关键代码：安装组件
     setupComponent(instance)
     if (__DEV__) {
       endMeasure(instance, `init`)
@@ -2038,12 +2043,7 @@ function baseCreateRenderer(
           false,
           true
         )
-      } else if (
-        (type === Fragment &&
-          (patchFlag & PatchFlags.KEYED_FRAGMENT ||
-            patchFlag & PatchFlags.UNKEYED_FRAGMENT)) ||
-        (!optimized && shapeFlag & ShapeFlags.ARRAY_CHILDREN)
-      ) {
+      } else if (!optimized && shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
         unmountChildren(children as VNode[], parentComponent, parentSuspense)
       }
 
@@ -2196,12 +2196,14 @@ function baseCreateRenderer(
     return hostNextSibling((vnode.anchor || vnode.el)!)
   }
 
+  // render方法
   const render: RootRenderFunction = (vnode, container) => {
     if (vnode == null) {
       if (container._vnode) {
         unmount(container._vnode, null, null, true)
       }
     } else {
+      // 如果有虚拟dom，就做一次diff，否则就是初始化
       patch(container._vnode || null, vnode, container)
     }
     flushPostFlushCbs()
@@ -2230,9 +2232,10 @@ function baseCreateRenderer(
     >)
   }
 
+  // 返回的对象就是renderer
   return {
     render,
-    hydrate,
+    hydrate, // 注水方法
     createApp: createAppAPI(render, hydrate)
   }
 }

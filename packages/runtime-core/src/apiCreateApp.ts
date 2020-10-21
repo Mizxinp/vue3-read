@@ -120,6 +120,7 @@ export type CreateAppFunction<HostElement> = (
 
 let uid = 0
 
+//
 export function createAppAPI<HostElement>(
   render: RootRenderFunction,
   hydrate?: RootHydrateFunction
@@ -130,11 +131,13 @@ export function createAppAPI<HostElement>(
       rootProps = null
     }
 
+    // 创建应用上下文保存状态
     const context = createAppContext()
     const installedPlugins = new Set()
 
     let isMounted = false
 
+    // 整个应用的实例
     const app: App = (context.app = {
       _uid: uid++,
       _component: rootComponent as ConcreteComponent,
@@ -156,6 +159,8 @@ export function createAppAPI<HostElement>(
         }
       },
 
+      // vue2是通过Vue.use()的静态方法， vue3中都变成实例方法，没有了静态方法，没有了全局api
+      // 好处：打包是优化，用了就打包，不用就不打包，体积减小
       use(plugin: Plugin, ...options: any[]) {
         if (installedPlugins.has(plugin)) {
           __DEV__ && warn(`Plugin has already been applied to target app.`)
@@ -226,6 +231,7 @@ export function createAppAPI<HostElement>(
 
       mount(rootContainer: HostElement, isHydrate?: boolean): any {
         if (!isMounted) {
+          // 创建一个跟组件，将它变为vnode
           const vnode = createVNode(
             rootComponent as ConcreteComponent,
             rootProps
@@ -244,6 +250,7 @@ export function createAppAPI<HostElement>(
           if (isHydrate && hydrate) {
             hydrate(vnode as VNode<Node, Element>, rootContainer as any)
           } else {
+            // 把虚拟节点变为真实节点，然后挂载到dom元素上（只走一遍）
             render(vnode, rootContainer)
           }
           isMounted = true

@@ -25,11 +25,13 @@ const rendererOptions = extend({ patchProp, forcePatchProp }, nodeOps)
 
 // lazy create the renderer - this makes core renderer logic tree-shakable
 // in case the user only imports reactivity utilities from Vue.
+// 渲染器，创建应用程序实例
 let renderer: Renderer<Element> | HydrationRenderer
 
 let enabledHydration = false
 
 function ensureRenderer() {
+  // 单例模式，存在则返回，不存在则创建
   return renderer || (renderer = createRenderer<Node, Element>(rendererOptions))
 }
 
@@ -51,6 +53,7 @@ export const hydrate = ((...args) => {
 }) as RootHydrateFunction
 
 export const createApp = ((...args) => {
+  // 获取渲染器实例，实例提供了createApp方法
   const app = ensureRenderer().createApp(...args)
 
   if (__DEV__) {

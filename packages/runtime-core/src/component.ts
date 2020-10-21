@@ -66,7 +66,7 @@ export type Data = Record<string, unknown>
 export interface ComponentCustomProps {}
 
 /**
- * Default allowed non-declared props on component in TSX
+ * Default allowed non-declared props on ocmponent in TSX
  */
 export interface AllowedComponentProps {
   class?: unknown
@@ -515,9 +515,12 @@ export function setupComponent(
 
   const { props, children, shapeFlag } = instance.vnode
   const isStateful = shapeFlag & ShapeFlags.STATEFUL_COMPONENT
+  // 属性初始化
   initProps(instance, props, isStateful, isSSR)
+  // 插槽初始化
   initSlots(instance, children)
 
+  // 如果是状态型组件：有属性，有data
   const setupResult = isStateful
     ? setupStatefulComponent(instance, isSSR)
     : undefined
@@ -549,9 +552,10 @@ function setupStatefulComponent(
     }
   }
   // 0. create render proxy property access cache
-  instance.accessCache = Object.create(null)
+  instance.accessCache = {}
   // 1. create public instance / render proxy
   // also mark it raw so it's never observed
+  // 给上下文做一下代理，如果需要响应式，则需要访问proxy属性和方法
   instance.proxy = new Proxy(instance.ctx, PublicInstanceProxyHandlers)
   if (__DEV__) {
     exposePropsOnRenderContext(instance)
@@ -564,10 +568,12 @@ function setupStatefulComponent(
 
     currentInstance = instance
     pauseTracking()
+    // 如果存在，怎会用带错误处理的调用函数去调用setup
     const setupResult = callWithErrorHandling(
       setup,
       instance,
       ErrorCodes.SETUP_FUNCTION,
+      // 传过来的参数
       [__DEV__ ? shallowReadonly(instance.props) : instance.props, setupContext]
     )
     resetTracking()
@@ -590,6 +596,7 @@ function setupStatefulComponent(
         )
       }
     } else {
+      //
       handleSetupResult(instance, setupResult, isSSR)
     }
   } else {
@@ -628,6 +635,7 @@ export function handleSetupResult(
       }`
     )
   }
+  // 关键：将我们编写的option选项一起处理掉
   finishComponentSetup(instance, isSSR)
 }
 
@@ -646,6 +654,7 @@ export function registerRuntimeCompiler(_compile: any) {
   compile = _compile
 }
 
+// 将我们编写的option选项一起处理掉
 function finishComponentSetup(
   instance: ComponentInternalInstance,
   isSSR: boolean
