@@ -450,8 +450,8 @@ function baseCreateRenderer(
   // Note: functions inside this closure should use `const xxx = () => {}`
   // style in order to prevent being inlined by minifiers.
   const patch: PatchFn = (
-    n1,
-    n2, // 虚拟节点
+    n1, // 旧的虚拟节点
+    n2, // 新的虚拟节点
     container,
     anchor = null,
     parentComponent = null,
@@ -471,6 +471,7 @@ function baseCreateRenderer(
       n2.dynamicChildren = null
     }
 
+    // 第一次，type是根组件的配置， 是一个组件， 所以走defaul中的语句，处理根组件
     const { type, ref, shapeFlag } = n2
     switch (type) {
       case Text:
@@ -511,6 +512,7 @@ function baseCreateRenderer(
             optimized
           )
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
+          // 初始化走这里，处理根组件， 第一次n1是空的，n2有值
           processComponent(
             n1,
             n2,
@@ -1207,7 +1209,7 @@ function baseCreateRenderer(
     isSVG: boolean,
     optimized: boolean
   ) => {
-    // 初始化时n1不为空，执行mountComponent
+    // 初始化时n1为空，执行mountComponent
     if (n1 == null) {
       if (n2.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE) {
         ;(parentComponent!.ctx as KeepAliveContext).activate(
@@ -1218,6 +1220,7 @@ function baseCreateRenderer(
           optimized
         )
       } else {
+        // 初始化走挂载流程
         mountComponent(
           n2,
           container,
@@ -1270,7 +1273,7 @@ function baseCreateRenderer(
       startMeasure(instance, `init`)
     }
 
-    // 关键代码：安装组件
+    // 关键代码：安装组件：选项处理
     setupComponent(instance)
     if (__DEV__) {
       endMeasure(instance, `init`)
@@ -1341,6 +1344,7 @@ function baseCreateRenderer(
     }
   }
 
+  // 建立渲染函数副作用：依赖收集
   const setupRenderEffect: SetupRenderEffectFn = (
     instance,
     initialVNode,
@@ -1351,10 +1355,12 @@ function baseCreateRenderer(
     optimized
   ) => {
     // create reactive effect for rendering
+    // effect可以建立一个依赖关系：传入effect的回调函数和响应式数据之间建立依赖关系
     instance.update = effect(function componentEffect() {
       if (!instance.isMounted) {
         let vnodeHook: VNodeHook | null | undefined
         const { el, props } = initialVNode
+        // 生命周期的处理
         const { bm, m, parent } = instance
 
         // beforeMount hook
@@ -1370,6 +1376,7 @@ function baseCreateRenderer(
         if (__DEV__) {
           startMeasure(instance, `render`)
         }
+        // subTree是当前组件的vnode， 执行一下当前组件的渲染函数renderComponentRoot
         const subTree = (instance.subTree = renderComponentRoot(instance))
         if (__DEV__) {
           endMeasure(instance, `render`)
@@ -1393,6 +1400,7 @@ function baseCreateRenderer(
           if (__DEV__) {
             startMeasure(instance, `patch`)
           }
+          // 更新组件， 初始化是preVnode为null
           patch(
             null,
             subTree,
@@ -2196,8 +2204,9 @@ function baseCreateRenderer(
     return hostNextSibling((vnode.anchor || vnode.el)!)
   }
 
-  // render方法
+  // render方法, 渲染传入vnode，到指定容器中
   const render: RootRenderFunction = (vnode, container) => {
+    // vnode首次不为空，是根组件渲染得到
     if (vnode == null) {
       if (container._vnode) {
         unmount(container._vnode, null, null, true)

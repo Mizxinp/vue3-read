@@ -520,7 +520,7 @@ export function setupComponent(
   // 插槽初始化
   initSlots(instance, children)
 
-  // 如果是状态型组件：有属性，有data
+  // 如果是状态型组件：有属性，有data, 响应式处理
   const setupResult = isStateful
     ? setupStatefulComponent(instance, isSSR)
     : undefined
@@ -532,6 +532,7 @@ function setupStatefulComponent(
   instance: ComponentInternalInstance,
   isSSR: boolean
 ) {
+  // 拿出组件的配置
   const Component = instance.type as ComponentOptions
 
   if (__DEV__) {
@@ -561,6 +562,7 @@ function setupStatefulComponent(
     exposePropsOnRenderContext(instance)
   }
   // 2. call setup()
+  // 如果有setup，则调用
   const { setup } = Component
   if (setup) {
     const setupContext = (instance.setupContext =
@@ -600,6 +602,7 @@ function setupStatefulComponent(
       handleSetupResult(instance, setupResult, isSSR)
     }
   } else {
+    // 处理选项等事物
     finishComponentSetup(instance, isSSR)
   }
 }
@@ -672,6 +675,7 @@ function finishComponentSetup(
       if (__DEV__) {
         startMeasure(instance, `compile`)
       }
+      // 如有没有渲染函数，则编译一下获取渲染函数
       Component.render = compile(Component.template, {
         isCustomElement: instance.appContext.config.isCustomElement,
         delimiters: Component.delimiters
@@ -695,8 +699,10 @@ function finishComponentSetup(
   }
 
   // support for 2.x options
+  // 支持2.x的选项API
   if (__FEATURE_OPTIONS_API__) {
     currentInstance = instance
+    // 应用选项
     applyOptions(instance, Component)
     currentInstance = null
   }

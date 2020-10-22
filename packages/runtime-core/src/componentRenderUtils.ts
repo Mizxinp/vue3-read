@@ -57,7 +57,7 @@ export function renderComponentRoot(
     data,
     setupState,
     ctx
-  } = instance
+  } = instance // 实例
 
   let result
   currentRenderingInstance = instance
@@ -66,10 +66,12 @@ export function renderComponentRoot(
   }
   try {
     let fallthroughAttrs
+    // 如果是状态组件：ShapeFlags.STATEFUL_COMPONENT
     if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
       // withProxy is a proxy with a different `has` trap only for
       // runtime-compiled render functions using `with` block.
       const proxyToUse = withProxy || proxy
+      // 执行render函数，并对其做标准化处理，得到一个规范的虚拟dom节点形式，保存在result中， 最后返回result
       result = normalizeVNode(
         render!.call(
           proxyToUse,
